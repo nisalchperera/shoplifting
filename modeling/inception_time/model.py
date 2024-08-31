@@ -2,7 +2,6 @@ import torch
 import numpy as np
 
 from torch.nn import ModuleList
-from sklearn.utils.class_weight import compute_class_weight
 
 from inception_time.modules import InceptionModel
 
