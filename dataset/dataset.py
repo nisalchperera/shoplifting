@@ -1,11 +1,74 @@
 import cv2
 import torch
+import json
 
 import numpy as np
+
+from collections import defaultdict
 
 from torchvision import transforms
 from torchvision.datasets import DatasetFolder
 from typing import Any, Callable, Optional, Tuple
+
+from torch.utils.data import Dataset
+from sklearn.preprocessing import LabelEncoder
+
+import joblib
+import pandas as pd
+import numpy as np
+
+
+def get_device():
+    if torch.cuda.is_available():
+        device = torch.device('cuda:0')
+    else:
+        device = torch.device('cpu')  # don't have GPU
+    return device
+
+
+class CustomDataset(Dataset):
+    def __init__(self, json_path):
+        super().__init__()
+        
+        self.read_json(json_path)
+        
+    def read_json(self, path):
+        with open(path, "r+") as reader:
+            data = json.load(reader)
+
+        self.videos = defaultdict(list)
+
+        for video_data in data["images"]:
+            for frame_data in data["annotations"]:
+                if video_data["id"] == frame_data["video_id"]:
+                    self.videos[video_data["id"]].append(frame_data)
+
+        for video_id, frames in self.videos.items():
+            frames = sorted(frames, key=lambda d: d['frame_id'])
+            self.videos[video_id] = frames
+
+        self.classes = [cls["category"] for cls in sorted(data["categories"], key=lambda d: d["id"])]
+
+    def num_classes(self):
+        return len(self.classes)
+        
+    def __len__(self):
+        return len(self.videos)
+
+    def __getitem__(self, index):
+        video_id = list(self.videos.keys())[index]
+        x = np.array([keypnts["keypoints"] for keypnts in self.videos[video_id]], dtype=np.uint8)
+        y = list(set([keypnts["category_id"] - 1 for keypnts in self.videos[video_id]]))[0]
+        
+        if x.shape[0] > 64:
+            idx = np.linspace(0, x.shape[0], 64, dtype=np.uint8, endpoint=False)
+            x = x[idx]
+
+        if x.shape[0] < 64:
+            pad_width = ((0, 64 - x.shape[0]), (0, 0), (0, 0))
+            x = np.pad(x, pad_width, mode='constant', constant_values=0)
+
+        return torch.from_numpy(x), torch.tensor(y)
 
 
 VIDEO_EXTENSIONS = (".mp4")
@@ -14,16 +77,6 @@ VIDEO_EXTENSIONS = (".mp4")
 def video_loader(path, num_frames):
     cap = cv2.VideoCapture(path)
     total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    # i = 0
-
-    # frames = []
-    # while cap.isOpened():
-    #     ret, frame = cap.read()
-    #     if not ret:
-    #         break
-        
-    #     if i % skip == 0:
-    #         frames.append(frame)
 
     interval = total_frames // num_frames
     
@@ -77,7 +130,6 @@ class VideoFolder(DatasetFolder):
         target_transform: Optional[Callable] = None,
         loader: Callable[[str], Any] = video_loader,
         is_valid_file: Optional[Callable[[str], bool]] = None,
-        # skip: int = 1,
         num_frames: int = 128
     ):
         super().__init__(
