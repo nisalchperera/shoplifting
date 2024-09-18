@@ -1,12 +1,12 @@
 import os
 
-from dataset.dataset import VideoFolder, CustomDataset
-from modeling.model import ShopliftingModel, ShopliftingClassifier, BaseModel
+from dataset.dataset import VideoDataset
+from modeling.model import Model
 from torch.utils.data import random_split
 
 
 def train():
-    dataset = CustomDataset(json_path="data/annotations.json")
+    dataset = VideoDataset(label_file="data/metadata.json")
 
     input_size = (17, 2)  # 17 keypoints with x and y coordinates
     hidden_size = 128
@@ -23,7 +23,7 @@ def train():
     test_size = len(dataset) - train_size
 
     train_dataset, test_dataset = random_split(dataset, [train_size, test_size])
-    model = BaseModel(input_size=input_size, hidden_size=hidden_size, num_layers=num_layers, num_classes=num_classes)
+    model = Model(num_classes=num_classes, device="cpu")
     model.train_epochs(10, train_dataset=train_dataset, eval_dataset=test_dataset, eval_every=2)
 
 

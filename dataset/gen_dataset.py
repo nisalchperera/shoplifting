@@ -1,97 +1,163 @@
-import os
 import cv2
 import json
+import numpy as np
 
-from datetime import datetime
 from glob import glob
+from datetime import datetime
+from collections import deque, defaultdict, Counter
+
 from ultralytics import YOLO
 
-pose = YOLO(f"models/yolov8m-pose.pt")
 
-classes = os.listdir("data/train")
+model = YOLO("models/yolov8m.pt")
 
-def video_loader(path, num_frames):
-    cap = cv2.VideoCapture(path, cv2.CAP_FFMPEG)
-    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-
-    # interval = math.ceil(total_frames / num_frames)
-    interval = total_frames // num_frames
+def create_video_clips(video_path, clip_length=16, overlap=0.5, target_size=(224, 224)):
+    """
+    Create video clips of fixed duration with overlapping windows.
     
-    frames = []
-    for i in range(num_frames):
-        cap.set(cv2.CAP_PROP_POS_FRAMES, i * interval)
+    Args:
+    video_path (str): Path to the input video file.
+    clip_length (int): Number of frames in each clip.
+    overlap (float): Fraction of overlap between consecutive clips (0 to 1).
+    target_size (tuple): Target size for resizing frames (width, height).
+    
+    Returns:
+    list: List of video clips, where each clip is a numpy array of shape (clip_length, height, width, channels).
+    """
+    cap = cv2.VideoCapture(video_path)
+    frame_buffer = deque(maxlen=clip_length)
+    clips = []
+    
+    # Calculate step size based on overlap
+    step = int(clip_length * (1 - overlap))
+    
+    frame_count = 0
+    while True:
         ret, frame = cap.read()
-        if ret:
-            if frame.shape[0] > frame.shape[1]:
-                height = 640
-                width = int(frame.shape[1] / frame.shape[0] * height)
-            else:
-                width = 640
-                height = int(frame.shape[0] / frame.shape[1] * width)
-            frame = cv2.resize(frame, (height, width))
-            frames.append(frame)
+        if not ret:
+            break
+        
+        # Resize frame
+        frame = cv2.resize(frame, target_size)
+        
+        # Convert BGR to RGB
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        
+        frame_buffer.append(frame)
+        frame_count += 1
+        
+        # Create a clip when buffer is full
+        if len(frame_buffer) == clip_length:
+            clip = np.array(frame_buffer)
+            clips.append(clip)
+            
+            # Move the buffer forward by the step size
+            for _ in range(step):
+                if len(frame_buffer) > 0:
+                    frame_buffer.popleft()
     
     cap.release()
+    return clips
 
-    return frames
+def extract_frames(video, num_frames):
+    
+    # Get total number of frames in the video
+    total_frames = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
+    
+    # Calculate the step size to evenly space frame extraction
+    step = total_frames // num_frames
+    
+    frames = []
+    idx = []
+    for i in range(num_frames):
+        # Set the frame position
+        video.set(cv2.CAP_PROP_POS_FRAMES, i * step)
+        
+        # Read the frame
+        ret, frame = video.read()
+        if ret:
+            frames.append(frame)
+            idx.append(i * step)
+    
+    # Release the video object
+    video.release()
+    
+    return frames, idx
 
-annotations = {
-    "images": [],
-    "annotations": [],
-    "categories": [
-        {
-            "id": 1,
-            "category": "Normal"
-        },
-        {
-            "id": 2,
-            "category": "Shoplifting"
-        }
-    ]
-}
+def video_metadata(video_path):
+    cap = cv2.VideoCapture(video_path)
+    width  = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
-category2id = {
-    "Normal": 1,
-    "Shoplifting": 2
-}
+    frames, idx = extract_frames(cap, 64)
 
-for cls in classes:
-    if os.path.isdir(os.path.join("data/train", cls)):
-        video_files = list(glob(f"data/train/{cls}/*.mp4"))
+    widths = []
+    heights = []
 
-        for i, video_file in enumerate(video_files):
-            frames = video_loader(video_file, 64)
+    results = model.track(frames, classes=[0])
+    for result in results:
+        boxes = result.boxes.xywh.cpu()[:, 2:].tolist()
+        _boxes = result.boxes.xywh.cpu().numpy()
+        _idx = np.argmax(_boxes[:, 2] - _boxes[:, 0]) * (_boxes[:, 3] - _boxes[:, 1])
+        _boxes = _boxes[_idx.astype(int)]
+        # _boxes = np.argmax(_boxes, axis=1)
+        for w, h in boxes:
+            widths.append(w)
+            heights.append(h)
 
-            images = []
-            video_id = datetime.timestamp(datetime.now()) + i
-            annotations["images"].append({
-                    "id": video_id,
-                    "video_file": video_file,
-                })
+    meta = {
+        "width": width,
+        "height": height,
+        "fps": fps,
+        "frames_count": length,
+        "person_width": sum(widths) / len(widths) if len(widths) else 0,
+        "person_height": sum(heights) / len(heights) if len(heights) else 0,
+    }
 
-            for frame_no, frame in enumerate(frames):
-                res = pose(frame, device="cuda")
-                x = res[0].keypoints.xy
+    return meta
 
-                keypoints = []
 
-                for j in range(x.shape[0]):
-                    _x = x[j]
-                    if _x.sum() == 0:
-                        continue
-                    else:
-                        keypoints.append({
-                            "id": datetime.timestamp(datetime.now()) + i + j,
-                            "video_id": video_id,
-                            "frame_id": frame_no,
-                            "keypoints": _x.int().cpu().numpy().tolist(),
-                            "bbox": res[0].boxes.xyxy[j].int().cpu().numpy().tolist(),
-                            "category_id": category2id[cls]
-                        })
-                annotations["annotations"].extend(keypoints)
-                
+video_list = glob("data/train/*/*.mp4")
 
-                print(f"Frame {frame_no} of video {video_file} is completed")
+dataset = defaultdict(list)
 
-with open("data/annotations.json", "w+") as r:
-    json.dump(annotations, r)
+# Example usage
+for idx, video_path in enumerate(video_list):
+
+    category = video_path.split("/")[-2]
+
+    metadata = video_metadata(video_path)
+
+    video = {
+        "id": datetime.timestamp(datetime.now()) + idx,
+        "path": video_path,
+        "category": category
+    }
+
+    metadata["video_id"] = video["id"]
+
+    dataset["video"].append(video)
+    dataset["metadata"].append(metadata)
+
+    # clips = create_video_clips(video_path, clip_length=16, overlap=0.5, target_size=(224, 224))
+
+    # print(f"Number of clips created: {len(clips)}")
+    # print(f"Shape of each clip: {clips[0].shape}")
+
+frame_counts = [d['frames_count'] for d in dataset["metadata"]]
+
+widths = [d['person_width'] for d in dataset["metadata"]]
+heights = [d['person_height'] for d in dataset["metadata"]]
+
+print(f"Min frame count: {min(frame_counts)}")
+print(f"Max frame count: {max(frame_counts)}")
+print(f"Average frame count: {int(sum(frame_counts) / len(dataset['metadata']))}")
+print(f"Counts: {Counter(frame_counts)}")
+
+print(f"Average person width: {sum(widths) / len(widths)}")
+print(f"Average person height: {sum(heights) / len(heights)}")
+
+with open("data/metadata.json", "w+") as writer:
+    json.dump(dataset, writer)

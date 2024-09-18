@@ -10,73 +10,106 @@ from ultralytics import YOLO
 
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
-from torch.nn import Module, LSTM, Linear, CrossEntropyLoss, Flatten, Sigmoid, BCEWithLogitsLoss
+from torch.nn import Module, Conv3d, BatchNorm3d, ReLU, MaxPool3d, AdaptiveAvgPool3d, Sequential, Identity, Linear, ModuleList, CrossEntropyLoss, Flatten, Sigmoid, BCEWithLogitsLoss
 
-
-class ShopliftingModel(Module):
-    def __init__(self, input_size, hidden_size, num_layers, num_classes, yolo_version=8, yolo_size="m") -> None:
-        super(ShopliftingModel, self).__init__()
-
-        self.pose = YOLO(f"models/yolov{yolo_version}{yolo_size}-pose.pt")
-        self.classifer = ShopliftingClassifier(input_size, hidden_size, num_layers, num_classes)
+    
+class ShopliftingDetector(Module):
+    def __init__(self, num_classes=2):
+        super().__init__()
         
-
-    def forward(self, image):
-
-        with torch.no_grad():
-            poses = []
-
-            for img in range(image.shape[1]):
-                imgs = image[:, img, :,:,:]
-
-                x = self.pose(imgs, device=self.device)
-
-                ## preprocess x
-                x = x[0].keypoints.data
-
-                poses.append(x)
-
-        return self.classifer(x)
-
-
-class ShopliftingClassifier(Module):
-    def __init__(self, input_size, hidden_size, num_layers, num_classes) -> None:
-        super(ShopliftingClassifier, self).__init__()
-        self.num_keypoints = input_size[0] * input_size[1]
-        self.hidden_size = hidden_size
-        self.num_layers = num_layers
-
-        self.flatten = Flatten(start_dim=2)
+        # Initial 3D conv layer
+        self.conv1 = Conv3d(3, 64, kernel_size=(3,7,7), stride=(1,2,2), padding=(1,3,3))
+        self.bn1 = BatchNorm3d(64)
+        self.relu = ReLU()
+        self.maxpool = MaxPool3d(kernel_size=(1,3,3), stride=(1,2,2), padding=(0,1,1))
         
-        self.lstm = LSTM(self.num_keypoints, hidden_size, num_layers, batch_first=True, bidirectional=True)
-        self.fc = Linear(hidden_size * 2, num_classes)  # *2 for bidirectional
-        self.sigmoid = Sigmoid()
+        # (2+1)D ResNet blocks
+        self.layers = ModuleList([
+            self._make_layer(64, 64, 2),
+            self._make_layer(64, 128, 2, stride=2),
+            self._make_layer(128, 256, 2, stride=2),
+            self._make_layer(256, 512, 2, stride=2),
+        ])
 
+        # Classification head
+        self.classifier = ModuleList([
+            AdaptiveAvgPool3d((1,1,1)),
+            Linear(512, num_classes),  # 2 classes: normal, shoplifting
+            Sigmoid()
+        ])
+        
+    def _make_layer(self, in_channels, out_channels, blocks, stride=1):
+        layers = []
+        layers.append(ResidualBlock(in_channels, out_channels, stride))
+        for _ in range(1, blocks):
+            layers.append(ResidualBlock(out_channels, out_channels))
+        return Sequential(*layers)
+    
     def forward(self, x):
-        # x shape: (batch_size, sequence_length, num_keypoints, 2)
-        batch_size, _, _, _ = x.size()
+        x = self.conv1(x)
+        x = self.bn1(x)
+        x = self.relu(x)
+        x = self.maxpool(x)
         
-        # Flatten the input
-        x = self.flatten(x)  # Shape: (batch_size, sequence_length, num_keypoints * 2)
+        for module in self.layers:
+            x = module(x)
+
+        for module in self.classifier:
+            x = module(x)
         
-        # Initialize hidden state with zeros
-        h0 = torch.zeros(self.num_layers * 2, batch_size, self.hidden_size).to(x.device)
-        c0 = torch.zeros(self.num_layers * 2, batch_size, self.hidden_size).to(x.device)
+        return x
+
+class ResidualBlock(Module):
+    def __init__(self, in_channels, out_channels, stride=1):
+        super().__init__()
         
-        # LSTM forward pass
-        out, _ = self.lstm(x, (h0, c0))
+        # Spatial convolution
+        self.conv1 = Conv3d(in_channels, out_channels, kernel_size=(1,3,3), 
+                               stride=(1,stride,stride), padding=(0,1,1))
+        self.bn1 = BatchNorm3d(out_channels)
         
-        # Use the output of the last time step
-        out = self.fc(out[:, -1, :])
-        return self.sigmoid(out)
+        # Temporal convolution 
+        self.conv2 = Conv3d(out_channels, out_channels, kernel_size=(3,1,1),
+                               stride=(1,1,1), padding=(1,0,0))
+        self.bn2 = BatchNorm3d(out_channels)
+        
+        self.relu = ReLU()
+        
+        # Shortcut connection
+        if stride != 1 or in_channels != out_channels:
+            self.shortcut = Sequential(
+                Conv3d(in_channels, out_channels, kernel_size=1, stride=(1,stride,stride)),
+                BatchNorm3d(out_channels)
+            )
+        else:
+            self.shortcut = Identity()
+        
+    def forward(self, x):
+        residual = x
+        
+        out = self.conv1(x)
+        out = self.bn1(out)
+        out = self.relu(out)
+        
+        out = self.conv2(out)
+        out = self.bn2(out)
+        
+        out += self.shortcut(residual)
+        out = self.relu(out)
+        
+        return out
     
 
-class BaseModel():
+class Model():
+    def __init__(self, **kwargs) -> None:
+        
+        device = kwargs.pop("device", None)
+        if device:
+            self.device = device
+        else:
+            self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-    def __init__(self, *args, **kwargs) -> None:
-
-        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        self.model = ShopliftingClassifier(**kwargs).to(self.device)
+        self.model = ShopliftingDetector(**kwargs).to(self.device)
 
     def accuracy(self, y_pred, y_true):
         # Get the predicted class (index of maximum value)
@@ -190,4 +223,4 @@ class BaseModel():
             writer.add_scalar('Training Accuracy', acc, e)
 
         os.makedirs(save_dir, exist_ok=True)
-        torch.save(self, os.path.join(save_dir, 'shoplifting_detector.pth'))
+        torch.save(self.model, os.path.join(save_dir, 'shoplifting_detector_3d_cnn.pth'))
