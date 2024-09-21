@@ -199,7 +199,7 @@ class Model():
     def train_epochs(self, epochs, train_dataset, eval_dataset=None, eval_every=0,save_dir="models/"):
         criterion = BCEWithLogitsLoss() # CrossEntropyLoss()
         optimizer = torch.optim.Adam(self.model.parameters(), 0.0001)
-        dataloader = DataLoader(train_dataset, batch_size=16, shuffle=True)
+        dataloader = DataLoader(train_dataset, batch_size=8, shuffle=True)
 
         if eval_dataset:
             eval_dataloader = DataLoader(eval_dataset, batch_size=4, shuffle=True)

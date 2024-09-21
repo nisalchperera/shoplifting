@@ -166,3 +166,5 @@ cython_debug/
 data/
 models/*.pt
 */*.zip
+*.zip
+runs/

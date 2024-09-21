@@ -23,7 +23,7 @@ def train():
     test_size = len(dataset) - train_size
 
     train_dataset, test_dataset = random_split(dataset, [train_size, test_size])
-    model = Model(num_classes=num_classes, device="cpu")
+    model = Model(num_classes=num_classes, device="cuda")
     model.train_epochs(10, train_dataset=train_dataset, eval_dataset=test_dataset, eval_every=2)
 
 
