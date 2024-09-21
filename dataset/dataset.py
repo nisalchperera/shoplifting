@@ -9,10 +9,9 @@ from ultralytics import YOLO
 from torchvision import transforms
 from torch.utils.data import Dataset, DataLoader
 
-model = YOLO("models/yolov8m.pt")
 
 def extract_frames(video, num_frames):
-    
+    model = YOLO("models/yolov8m.pt")
     # Get total number of frames in the video
     total_frames = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
     
@@ -27,7 +26,7 @@ def extract_frames(video, num_frames):
         # Read the frame
         ret, frame = video.read()
         if ret:
-            result = model.predict(frame, classes=[0])[0]
+            result = model.predict(frame, classes=[0], verbose=False)[0]
             boxes = result.boxes.xyxy.int().cpu().numpy()
             _areas = (boxes[:, 2] - boxes[:, 0]) * (boxes[:, 3] - boxes[:, 1])
             # if _areas.size == 0:
@@ -37,12 +36,12 @@ def extract_frames(video, num_frames):
                 boxes = boxes[_idx.astype(int)]
                 frame = frame[boxes[1]:boxes[3], boxes[0]:boxes[2]]
 
-            frame = cv2.resize(frame, (224, 448))
+            frame = cv2.resize(frame, (112, 224))
             frames.append(frame)
     
     # Release the video object
     video.release()
-    
+    del model
     return frames
 
 class VideoDataset(Dataset):
@@ -97,7 +96,7 @@ class VideoDataset(Dataset):
         return frames, self.label2id[label]
 
 class VideoTransform:
-    def __init__(self, size=(448, 224)):
+    def __init__(self, size=(224, 112)):
         self.size = size
     
     def __call__(self, clip):
@@ -118,6 +117,8 @@ class VideoTransform:
             clip[i] = transform(clip[i])
         
         clip = clip.permute(1, 0, 2, 3)
+
+        # print(f"Tensor size: {clip.element_size() * clip.nelement()/ 1024 / 1024}")
 
         return clip
 

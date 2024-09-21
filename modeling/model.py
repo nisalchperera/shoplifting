@@ -13,91 +13,106 @@ from torch.utils.tensorboard import SummaryWriter
 from torch.nn import Module, Conv3d, BatchNorm3d, ReLU, MaxPool3d, AdaptiveAvgPool3d, Sequential, Identity, Linear, ModuleList, CrossEntropyLoss, Flatten, Sigmoid, BCEWithLogitsLoss
 
     
-class ShopliftingDetector(Module):
-    def __init__(self, num_classes=2):
-        super().__init__()
-        
-        # Initial 3D conv layer
-        self.conv1 = Conv3d(3, 64, kernel_size=(3,7,7), stride=(1,2,2), padding=(1,3,3))
-        self.bn1 = BatchNorm3d(64)
-        self.relu = ReLU()
-        self.maxpool = MaxPool3d(kernel_size=(1,3,3), stride=(1,2,2), padding=(0,1,1))
-        
-        # (2+1)D ResNet blocks
-        self.layers = ModuleList([
-            self._make_layer(64, 64, 2),
-            self._make_layer(64, 128, 2, stride=2),
-            self._make_layer(128, 256, 2, stride=2),
-            self._make_layer(256, 512, 2, stride=2),
-        ])
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
 
-        # Classification head
-        self.classifier = ModuleList([
-            AdaptiveAvgPool3d((1,1,1)),
-            Linear(512, num_classes),  # 2 classes: normal, shoplifting
-            Sigmoid()
+class Conv3DSimple(nn.Conv3d):
+    def __init__(self, in_planes, out_planes, midplanes=None, stride=1, padding=1):
+        super(Conv3DSimple, self).__init__(
+            in_channels=in_planes,
+            out_channels=out_planes,
+            kernel_size=(3, 3, 3),
+            stride=stride,
+            padding=padding,
+            bias=False)
+
+class BasicBlock(nn.Module):
+    expansion = 1
+
+    def __init__(self, inplanes, planes, stride=1, downsample=None):
+        super(BasicBlock, self).__init__()
+        self.conv1 = Conv3DSimple(inplanes, planes, stride=stride)
+        self.bn1 = nn.BatchNorm3d(planes)
+        self.relu = nn.ReLU(inplace=True)
+        self.conv2 = Conv3DSimple(planes, planes)
+        self.bn2 = nn.BatchNorm3d(planes)
+        self.downsample = downsample
+        self.stride = stride
+
+    def forward(self, x):
+        residual = x
+
+        out = self.conv1(x)
+        out = self.bn1(out)
+        out = self.relu(out)
+
+        out = self.conv2(out)
+        out = self.bn2(out)
+
+        if self.downsample is not None:
+            residual = self.downsample(x)
+
+        out += residual
+        out = self.relu(out)
+
+        return out
+
+class ShopliftingDetector(nn.Module):
+    def __init__(self, num_classes=2):
+        super(ShopliftingDetector, self).__init__()
+        self.inplanes = 64
+
+        self.conv1 = nn.Conv3d(3, 64, kernel_size=(3, 7, 7), stride=(1, 2, 2), padding=(1, 3, 3), bias=False)
+        self.bn1 = nn.BatchNorm3d(64)
+        self.relu = nn.ReLU(inplace=True)
+        self.maxpool = nn.MaxPool3d(kernel_size=(1, 3, 3), stride=(1, 2, 2), padding=(0, 1, 1))
+
+        self.layers = ModuleList([
+            self._make_layer(BasicBlock, 64, 3),
+            self._make_layer(BasicBlock, 128, 4, stride=2),
+            self._make_layer(BasicBlock, 256, 6, stride=2),
+            self._make_layer(BasicBlock, 512, 3, stride=2)
         ])
-        
-    def _make_layer(self, in_channels, out_channels, blocks, stride=1):
+        # self.layer1 = 
+        # self.layer2 = 
+        # self.layer3 = 
+        # self.layer4 = 
+
+        self.avgpool = nn.AdaptiveAvgPool3d((1, 1, 1))
+        self.fc = nn.Linear(512 * BasicBlock.expansion, num_classes)
+
+    def _make_layer(self, block, planes, blocks, stride=1):
+        downsample = None
+        if stride != 1 or self.inplanes != planes * block.expansion:
+            downsample = nn.Sequential(
+                nn.Conv3d(self.inplanes, planes * block.expansion, 
+                        kernel_size=1, stride=(1, stride, stride), bias=False),
+                nn.BatchNorm3d(planes * block.expansion)
+            )
+
         layers = []
-        layers.append(ResidualBlock(in_channels, out_channels, stride))
+        layers.append(block(self.inplanes, planes, stride=(1, stride, stride), downsample=downsample))
+        self.inplanes = planes * block.expansion
         for _ in range(1, blocks):
-            layers.append(ResidualBlock(out_channels, out_channels))
-        return Sequential(*layers)
-    
+            layers.append(block(self.inplanes, planes))
+
+        return nn.Sequential(*layers)
+
     def forward(self, x):
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
         x = self.maxpool(x)
-        
-        for module in self.layers:
-            x = module(x)
 
-        for module in self.classifier:
-            x = module(x)
-        
+        for layer in self.layers:
+            x = layer(x)
+
+        x = self.avgpool(x)
+        x = x.view(x.size(0), -1)
+        x = self.fc(x)
+
         return x
-
-class ResidualBlock(Module):
-    def __init__(self, in_channels, out_channels, stride=1):
-        super().__init__()
-        
-        # Spatial convolution
-        self.conv1 = Conv3d(in_channels, out_channels, kernel_size=(1,3,3), 
-                               stride=(1,stride,stride), padding=(0,1,1))
-        self.bn1 = BatchNorm3d(out_channels)
-        
-        # Temporal convolution 
-        self.conv2 = Conv3d(out_channels, out_channels, kernel_size=(3,1,1),
-                               stride=(1,1,1), padding=(1,0,0))
-        self.bn2 = BatchNorm3d(out_channels)
-        
-        self.relu = ReLU()
-        
-        # Shortcut connection
-        if stride != 1 or in_channels != out_channels:
-            self.shortcut = Sequential(
-                Conv3d(in_channels, out_channels, kernel_size=1, stride=(1,stride,stride)),
-                BatchNorm3d(out_channels)
-            )
-        else:
-            self.shortcut = Identity()
-        
-    def forward(self, x):
-        residual = x
-        
-        out = self.conv1(x)
-        out = self.bn1(out)
-        out = self.relu(out)
-        
-        out = self.conv2(out)
-        out = self.bn2(out)
-        
-        out += self.shortcut(residual)
-        out = self.relu(out)
-        
-        return out
     
 
 class Model():
@@ -131,7 +146,10 @@ class Model():
         acc = 0.0
         total_samples = 0.0
 
-        for batch_idx, (keypoints, labels) in enumerate(train_loader):
+        batch_pbar = tqdm(enumerate(train_loader), desc=f"Epoch {e}", total=len(train_loader))
+        for batch_idx, (keypoints, labels) in batch_pbar:
+            batch_pbar.set_postfix_str(f"Batch: {batch_idx}")
+
             keypoints = keypoints.to(self.device).float()
             labels = F.one_hot(labels.to(self.device), num_classes=2).float()
             
@@ -199,7 +217,7 @@ class Model():
     def train_epochs(self, epochs, train_dataset, eval_dataset=None, eval_every=0,save_dir="models/"):
         criterion = BCEWithLogitsLoss() # CrossEntropyLoss()
         optimizer = torch.optim.Adam(self.model.parameters(), 0.0001)
-        dataloader = DataLoader(train_dataset, batch_size=8, shuffle=True)
+        dataloader = DataLoader(train_dataset, batch_size=4, shuffle=True)
 
         if eval_dataset:
             eval_dataloader = DataLoader(eval_dataset, batch_size=4, shuffle=True)
@@ -209,7 +227,7 @@ class Model():
 
         train_pbar = tqdm(range(epochs), desc="Model Training")
         for e in train_pbar:
-            loss, acc = self.train(train_loader=dataloader, criterion=criterion, optimizer=optimizer)
+            loss, acc = self.train(train_loader=dataloader, criterion=criterion, optimizer=optimizer, e=e)
 
             if eval_every and e % eval_every:
                 eval_acc, eval_loss = self.validate(eval_dataloader, criterion, e, writer)
