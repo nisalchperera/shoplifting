@@ -5,43 +5,24 @@ import torch
 
 import numpy as np
 
-from ultralytics import YOLO
 from torchvision import transforms
 from torch.utils.data import Dataset, DataLoader
 
 
-def extract_frames(video, num_frames):
-    model = YOLO("models/yolov8m.pt")
-    # Get total number of frames in the video
-    total_frames = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
-    
-    # Calculate the step size to evenly space frame extraction
-    step = total_frames // num_frames
-    
-    frames = []
-    for i in range(num_frames):
-        # Set the frame position
-        video.set(cv2.CAP_PROP_POS_FRAMES, i * step)
-        
-        # Read the frame
-        ret, frame = video.read()
-        if ret:
-            result = model.predict(frame, classes=[0], verbose=False)[0]
-            boxes = result.boxes.xyxy.int().cpu().numpy()
-            _areas = (boxes[:, 2] - boxes[:, 0]) * (boxes[:, 3] - boxes[:, 1])
-            # if _areas.size == 0:
-            #     frame = cv2.resize(frame, (224, 448))
-            if _areas.size != 0:
-                _idx = np.argmax(_areas)
-                boxes = boxes[_idx.astype(int)]
-                frame = frame[boxes[1]:boxes[3], boxes[0]:boxes[2]]
+def getint(name):
+    filename = name.split('/')[-1]
+    num, _ = filename.split('.')
+    return int(num)
 
-            frame = cv2.resize(frame, (112, 224))
-            frames.append(frame)
-    
-    # Release the video object
-    video.release()
-    del model
+def extract_frames(video_path):
+    video_folder = ".".join(video_path.split(".")[:-1])
+    frame_paths = os.listdir(video_folder)
+    sorted_frame_paths = sorted(frame_paths, key=getint)
+
+    frames = []
+    for frame_path in sorted_frame_paths:
+        frames.append(cv2.imread(os.path.join(video_folder, frame_path)))
+
     return frames
 
 class VideoDataset(Dataset):
@@ -74,8 +55,8 @@ class VideoDataset(Dataset):
         label = self.labels[idx]
         
         # Load video clip
-        cap = cv2.VideoCapture(video_path)
-        frames = extract_frames(cap, self.num_frames)
+        # cap = cv2.VideoCapture(video_path)
+        frames = extract_frames(video_path)
         
         # If video is shorter than clip_length, loop the last frame
         while len(frames) < self.num_frames:

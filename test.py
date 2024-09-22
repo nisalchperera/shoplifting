@@ -1,17 +1,20 @@
 import os
 import cv2
+import math
 import torch
 
 import numpy as np
 
 from glob import glob
 from ultralytics import YOLO
-from collections import defaultdict
+
+from dataset.dataset import VideoTransform
 
 
-yolo = YOLO("yolov8m.pt")
+yolo = YOLO("models/yolov8m.pt")
 yolo_pose = YOLO("models/yolov8m-pose.pt")
-classifier = torch.load("models/shoplifting_detector.pth")
+classifier = torch.load("models/shoplifting_detector_3d_cnn.pth").cpu()
+video_transform = VideoTransform()
 
 font = cv2.FONT_HERSHEY_SIMPLEX
 fontScale = 1
@@ -47,35 +50,58 @@ def test():
         height = int(video.get(cv2.CAP_PROP_FRAME_HEIGHT))
         fps = video.get(cv2.CAP_PROP_FPS)
 
+        skip_frames = math.floor(fps / 10)
+
         fourcc = cv2.VideoWriter_fourcc(*'mp4v') 
         video_writer = cv2.VideoWriter(video_file.replace("originals", "predicted"), cv2.CAP_FFMPEG, fourcc, fps, (width, height))
 
-        keypoints = defaultdict(list)
+        frames = []
         ret = True
+        frame_num = 0
+        i = 0
         while ret:
             ret, frame = video.read()
+            _frame = frame
 
-            # detections = yolo(frame)
-            detections = yolo_pose(frame)
+            if frame is not None and frame_num % skip_frames == 0:
+                detection = yolo.predict(frame, classes=[0], verbose=False)[0]
 
-            for detection in detections:
-                bboxes = detection.boxes.xyxy.int().cpu().numpy().tolist()
+                boxes = detection.boxes.xyxy.int().cpu().numpy()
+                _areas = (boxes[:, 2] - boxes[:, 0]) * (boxes[:, 3] - boxes[:, 1])
+                # if _areas.size == 0:
+                #     frame = cv2.resize(frame, (224, 448))
+                if _areas.size != 0:
+                    _idx = np.argmax(_areas)
+                    boxes = boxes[_idx.astype(int)].tolist()
+                    _frame = _frame[boxes[1]:boxes[3], boxes[0]:boxes[2]]
+                
 
-                for i, bbox in enumerate(bboxes):
-                    pose = detection.keypoints.xy.float().cpu().numpy().tolist()[i]
-                    keypoints[i].append(pose)
-                    
-                    res = predict(keypoints[i])
+                _frame = cv2.resize(_frame, (112, 224))
 
-                    color = (0, 255, 0) if res == "Normal" else (0, 0, 255)
-                    frame = cv2.rectangle(frame, tuple(bbox[:2]), tuple(bbox[2:]), color, 2)
-                    frame = cv2.putText(frame, res, tuple(bbox[:2]), font, fontScale, color, 2)
+                frames.append(_frame)
 
-                    if len(keypoints[i]) == 64:
-                        keypoints[i] = []
+                if len(frames) < 64:
+                    for _ in range(i + 1, 64):
+                        frames.append(_frame)
 
-            # cv2.imshow("Videos", frame)
+                _frames = video_transform(frames).unsqueeze(0)
+
+                result = np.argmax(classifier(_frames).detach().cpu().numpy()).item()
+                result = id2cat[result]
+                color = (0, 255, 0) if result == "Normal" else (0, 0, 255)
+                if _areas.size > 0:
+                    cv2.rectangle(frame, tuple(boxes[:2]), tuple(boxes[2:]), color, 2)
+                    cv2.putText(frame, result, tuple(boxes[:2]), font, fontScale, color, 2)
+
+                # cv2.imshow("Videos", frame)
+
+                for _ in range(i + 1, 64):
+                    del frames[i]
+
+                i = i + 1
+
             video_writer.write(frame)
+            frame_num = frame_num + 1
 
         video_writer.release()
         video.release()
