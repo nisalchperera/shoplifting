@@ -6,6 +6,8 @@ import torch
 import numpy as np
 
 from glob import glob
+from datetime import datetime
+
 from ultralytics import YOLO
 
 from dataset.dataset import VideoTransform
@@ -46,6 +48,8 @@ def test():
 
     for video_file in video_files:
         print(f"Processing {video_file}")
+
+        start = datetime.now()
         video = read_video(video_file)
         width  = int(video.get(cv2.CAP_PROP_FRAME_WIDTH))
         height = int(video.get(cv2.CAP_PROP_FRAME_HEIGHT))
@@ -105,6 +109,7 @@ def test():
 
         video_writer.release()
         video.release()
+        print(f"Time to process: {(datetime.now() - start).total_seconds()}")
 
 if __name__ == "__main__":
     test()
