@@ -45,6 +45,12 @@ class VideoDataset(Dataset):
         self.video_paths = [os.path.join(self.video_dir, d["path"]) for d in data["video"]]
         self.labels = [d["category"] for d in data["video"]]
 
+        non_existing = [path for path in self.video_paths if not os.path.exists(path)]
+        if len(non_existing):
+            print(", ".join(non_existing))
+        else:
+            print("All video paths are available")
+
         self.label2id = {label: i for i, label in enumerate(data["categories"])}
         
     def __len__(self):

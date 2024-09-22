@@ -24,7 +24,7 @@ def train():
 
     train_dataset, test_dataset = random_split(dataset, [train_size, test_size])
     model = Model(num_classes=num_classes, device="cuda")
-    model.train_epochs(10, train_dataset=train_dataset, eval_dataset=test_dataset, eval_every=2)
+    model.train_epochs(50, train_dataset=train_dataset, eval_dataset=test_dataset, eval_every=2)
 
 
 if __name__ == "__main__":
