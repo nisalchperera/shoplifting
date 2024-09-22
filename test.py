@@ -6,6 +6,8 @@ import torch
 import numpy as np
 
 from glob import glob
+from datetime import datetime
+
 from ultralytics import YOLO
 
 from dataset.dataset import VideoTransform
@@ -45,6 +47,9 @@ def test():
     video_files = glob("data/validate/originals/*.mp4")
 
     for video_file in video_files:
+        print(f"Processing {video_file}")
+
+        start = datetime.now()
         video = read_video(video_file)
         width  = int(video.get(cv2.CAP_PROP_FRAME_WIDTH))
         height = int(video.get(cv2.CAP_PROP_FRAME_HEIGHT))
@@ -80,13 +85,12 @@ def test():
 
                 frames.append(_frame)
 
-                if len(frames) < 64:
-                    for _ in range(i + 1, 64):
-                        frames.append(_frame)
+                if i >= 64:
+                    frames.pop(0)
 
-                _frames = video_transform(frames).unsqueeze(0)
+                inputs = video_transform(frames.copy()).unsqueeze(0)
 
-                result = np.argmax(classifier(_frames).detach().cpu().numpy()).item()
+                result = np.argmax(classifier(inputs).detach().cpu().numpy()).item()
                 result = id2cat[result]
                 color = (0, 255, 0) if result == "Normal" else (0, 0, 255)
                 if _areas.size > 0:
@@ -95,8 +99,8 @@ def test():
 
                 # cv2.imshow("Videos", frame)
 
-                for _ in range(i + 1, 64):
-                    del frames[i]
+                # for _ in range(i + 1, 64):
+                #     del frames[i]
 
                 i = i + 1
 
@@ -105,6 +109,7 @@ def test():
 
         video_writer.release()
         video.release()
+        print(f"Time to process: {(datetime.now() - start).total_seconds()}")
 
 if __name__ == "__main__":
     test()

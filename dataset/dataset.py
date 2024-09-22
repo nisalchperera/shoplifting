@@ -66,7 +66,7 @@ class VideoDataset(Dataset):
         
         # If video is shorter than clip_length, loop the last frame
         while len(frames) < self.num_frames:
-            frames.extend(frames[-4:])
+            frames.append(frames[-1])
 
         # make sure frames has num_frames.
         if len(frames) > self.num_frames:
@@ -83,10 +83,15 @@ class VideoDataset(Dataset):
         return frames, self.label2id[label]
 
 class VideoTransform:
-    def __init__(self, size=(224, 112)):
+    def __init__(self, size=(224, 112), clip_length=64):
         self.size = size
+        self.clip_length = clip_length
     
     def __call__(self, clip):
+        
+        while len(clip) < self.clip_length:
+            clip.append(clip[-1])
+
         # Resize
         clip = [cv2.resize(frame, self.size) for frame in clip]
         clip = np.array(clip)
