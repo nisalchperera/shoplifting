@@ -146,9 +146,9 @@ class Model():
         acc = 0.0
         total_samples = 0.0
 
-        batch_pbar = tqdm(enumerate(train_loader), desc=f"Epoch {e}", total=len(train_loader))
+        batch_pbar = tqdm(enumerate(train_loader), total=len(train_loader))
         for batch_idx, (keypoints, labels) in batch_pbar:
-            batch_pbar.set_postfix_str(f"Batch: {batch_idx}")
+            batch_pbar.set_description_str(f"Epoch {e}: Batch {batch_idx}")
 
             keypoints = keypoints.to(self.device).float()
             labels = F.one_hot(labels.to(self.device), num_classes=2).float()
