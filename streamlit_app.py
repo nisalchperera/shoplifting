@@ -24,19 +24,6 @@ def download_progress_hook(count, blocksize, totalsize):
 
         down_unit = "bytes"
         total_unit = "bytes"
-        if totalsize / 1024 > 1:
-            for i in range(4):
-                downloaded = downloaded / 1024
-                if downloaded < 1:
-                    down_unit = bytes_map[i]
-                    break
-                
-            for i in range(4):
-                totalsize = totalsize / 1024
-                if totalsize < 1:
-                    down_unit = bytes_map[i]
-                    break
-            
         
         print(f'\r|{progress}| {percentage:.2f}% ({downloaded} {down_unit}/{totalsize} {total_unit})', end='')
     if downloaded >= totalsize:
