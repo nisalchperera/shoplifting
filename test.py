@@ -14,7 +14,6 @@ from dataset.dataset import VideoTransform
 
 
 yolo = YOLO("models/yolov8m.pt")
-yolo_pose = YOLO("models/yolov8m-pose.pt")
 classifier = torch.load("models/shoplifting_detector_3d_cnn.pth").cpu()
 video_transform = VideoTransform()
 
@@ -43,11 +42,11 @@ def predict(data):
     return id2cat[out]
 
 
-def test(path=None):
-    if not path:
+def test(video_files=None):
+    if not video_files:
         video_files = glob("data/validate/originals/*.mp4")
         
-
+    filenames = []
     for video_file in video_files:
         print(f"Processing {video_file}")
 
@@ -59,8 +58,9 @@ def test(path=None):
 
         skip_frames = math.floor(fps / 10)
 
+        filename = video_file.replace("originals", "predicted")
         fourcc = cv2.VideoWriter_fourcc(*'mp4v') 
-        video_writer = cv2.VideoWriter(video_file.replace("originals", "predicted"), cv2.CAP_FFMPEG, fourcc, fps, (width, height))
+        video_writer = cv2.VideoWriter(filename, cv2.CAP_FFMPEG, fourcc, fps, (width, height))
 
         frames = []
         ret = True
@@ -112,6 +112,9 @@ def test(path=None):
         video_writer.release()
         video.release()
         print(f"Time to process: {(datetime.now() - start).total_seconds()}")
+        filenames.append(filename)
+        
+    return filenames
 
 if __name__ == "__main__":
     test()
