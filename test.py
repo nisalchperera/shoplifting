@@ -14,7 +14,7 @@ from dataset.dataset import VideoTransform
 
 
 yolo = YOLO("models/yolov8m.pt")
-classifier = torch.load("models/shoplifting_detector_3d_cnn.pth").cpu()
+classifier = torch.load("models/shoplifting_detector_3d_cnn.pth", map_location=torch.device('cpu')).cpu()
 video_transform = VideoTransform()
 
 font = cv2.FONT_HERSHEY_SIMPLEX
