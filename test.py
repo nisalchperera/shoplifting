@@ -43,8 +43,10 @@ def predict(data):
     return id2cat[out]
 
 
-def test():
-    video_files = glob("data/validate/originals/*.mp4")
+def test(path=None):
+    if not path:
+        video_files = glob("data/validate/originals/*.mp4")
+        
 
     for video_file in video_files:
         print(f"Processing {video_file}")
