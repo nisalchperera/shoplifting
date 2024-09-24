@@ -1,3 +1,6 @@
+import sys
+sys.path.append ("/mount/src/shoplifting/")  
+
 import os
 import subprocess
 
