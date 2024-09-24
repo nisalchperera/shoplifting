@@ -1,4 +1,4 @@
-opencv-python-contrib-headless
+opencv-python-headless
 pandas==2.0.3
 pillow==10.4.0
 requests==2.32.3
