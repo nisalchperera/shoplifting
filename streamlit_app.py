@@ -65,13 +65,15 @@ def app():
             
             for output_path in videos:
                 st.text(f"Visualizing {output_path}")
-                with open(output_path, 'rb') as f:
-                    st.download_button('Download Video', f, file_name=output_path.split("/")[-1])
+                st.video(output_path)
+                # with open(output_path, 'rb') as f:
+                #     st.download_button('Download Video', f, file_name=output_path.split("/")[-1])
         
         else:
             output_path = input_path.replace("originals", "predicted")
-            with open(output_path, 'rb') as f:
-                st.download_button('Download Video', f, file_name=output_path.split("/")[-1])
+            st.video(output_path)
+            # with open(output_path, 'rb') as f:
+            #     st.download_button('Download Video', f, file_name=output_path.split("/")[-1])
 
 
 if __name__ == "__main__":
