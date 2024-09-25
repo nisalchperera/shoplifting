@@ -5,8 +5,6 @@ requests
 scipy
 seaborn
 streamlit
-torch
-torchvision
 tqdm
 typing_extensions
 ultralytics
