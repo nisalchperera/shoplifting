@@ -108,8 +108,6 @@ RUN mkdir -p /opt/program/data
 WORKDIR /opt/program
 
 COPY requirements.txt /opt/program/requirements.txt
-RUN python${PYTHON_VERSION} -m pip install -r /opt/program/requirements.txt \
-    && rm /opt/program/requirements.txt
 
 # Installing Jupyter
 RUN apt-get update && \
@@ -125,6 +123,9 @@ RUN python${PYTHON_VERSION} -m pip install traitlets==5.9.0
 # Installing PyTorch
 RUN python${PYTHON_VERSION} -m pip install torch==${TORCH_VERSION_1}+cu${CUDA_VERSION_2} -f https://download.pytorch.org/whl/torch_stable.html
 RUN python${PYTHON_VERSION} -m pip install torchvision==${TORCHVISION_VERSION}+cu${CUDA_VERSION_2} -f https://download.pytorch.org/whl/torch_stable.html
+
+RUN python${PYTHON_VERSION} -m pip install -r /opt/program/requirements.txt \
+    && rm /opt/program/requirements.txt
 
 RUN python${PYTHON_VERSION} -m pip list
 
