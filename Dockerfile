@@ -131,11 +131,9 @@ RUN python${PYTHON_VERSION} -m pip install -r /opt/program/requirements.txt \
 RUN python${PYTHON_VERSION} -m pip uninstall -y opencv-python opencv-python-headless
 
 RUN git clone -b 4.x https://github.com/opencv/opencv.git
-RUN cd opencv
+WORKDIR /opt/program/opencv
 RUN mkdir build
-RUN cd build
-
-RUN ls ../
+WORKDIR /opt/program/opencv/build
 
 RUN cmake -D CMAKE_BUILD_TYPE=RELEASE \
       -D CMAKE_INSTALL_PREFIX=/usr/local \
@@ -150,13 +148,15 @@ RUN cmake -D CMAKE_BUILD_TYPE=RELEASE \
       -D WITH_OPENMP=ON \
       -D WITH_IPP=ON \
       -D CPU_BASELINE=SSE4_2,AVX,AVX2 \
-      /opt/program/github/
+      ..
 
 RUN make -j$(nproc)
 RUN make install
 RUN ldconfig
 
 RUN python${PYTHON_VERSION} -m pip list
+
+WORKDIR /opt/program/
 
 COPY . /opt/program/
 
