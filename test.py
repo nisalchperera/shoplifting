@@ -55,7 +55,7 @@ def test(video_files=None):
         width  = int(video.get(cv2.CAP_PROP_FRAME_WIDTH))
         height = int(video.get(cv2.CAP_PROP_FRAME_HEIGHT))
         fps = video.get(cv2.CAP_PROP_FPS)
-        h = int(cap.get(cv2.CAP_PROP_FOURCC))
+        h = int(video.get(cv2.CAP_PROP_FOURCC))
         codec = chr(h&0xff) + chr((h>>8)&0xff) + chr((h>>16)&0xff) + chr((h>>24)&0xff)
         
         skip_frames = math.floor(fps / 10)
