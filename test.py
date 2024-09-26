@@ -13,9 +13,9 @@ from ultralytics import YOLO
 
 from dataset.dataset import VideoTransform
 
-
+device = "cuda" if torch.cuda.is_available() else "cpu"
 yolo = YOLO("models/yolov8m.pt")
-classifier = torch.load("models/shoplifting_detector_3d_cnn.pth")
+classifier = torch.load("models/shoplifting_detector_3d_cnn.pth", map_location=torch.device(device))
 video_transform = VideoTransform()
 
 font = cv2.FONT_HERSHEY_SIMPLEX
