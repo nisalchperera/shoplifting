@@ -72,11 +72,10 @@ def test(video_files=None):
             ret, frame = video.read()
             # _frame =frame
 
-            if frame is not None or frame.size != 0 and frame_num % skip_frames == 0:
+            if frame is not None and frame_num % skip_frames == 0:
                 detection = yolo.predict(frame, classes=[0], verbose=False)[0]
 
                 for boxes in detection.boxes.xyxy.int().cpu().numpy().tolist():
-                    print(f"Boxes: {boxes}")
                 # boxes = 
                     # _areas = (boxes[:, 2] - boxes[:, 0]) * (boxes[:, 3] - boxes[:, 1])
                     # if _areas.size == 0:
