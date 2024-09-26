@@ -3,7 +3,7 @@ FROM nvidia/cuda:12.1.0-devel-ubuntu20.04
 ENV LANG=C.UTF-8
 ENV LC_ALL=C.UTF-8
 ENV CUDNN_VERSION 8.9.3.28
-ENV PYTHON_VERSION 3.9
+ENV PYTHON_VERSION 3.8
 ENV FORCE_CUDA="1"
 ENV CUDA_CACHE_DISABLE="1"
 ENV TORCH_CUDA_ARCH_LIST="Turing"
@@ -155,7 +155,7 @@ RUN make install
 RUN ldconfig
 
 ENV LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
-ENV PYTHONPATH=/usr/local/lib/python3.x/site-packages:$PYTHONPATH
+ENV PYTHONPATH=/usr/local/lib/python${PYTHON_VERSION}/site-packages:$PYTHONPATH
 # Optional: Verify the installation
 RUN python3 -c "import cv2; print(cv2.__version__)"
 
