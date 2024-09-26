@@ -130,9 +130,8 @@ RUN python${PYTHON_VERSION} -m pip install -r /opt/program/requirements.txt \
 
 RUN python${PYTHON_VERSION} -m pip uninstall -y opencv-python opencv-python-headless
 
-RUN git clone https://github.com/opencv/opencv.git
+RUN git clone -b 4.x https://github.com/opencv/opencv.git
 RUN cd opencv
-RUN git checkout 4.x
 RUN mkdir build
 RUN cd build
 
