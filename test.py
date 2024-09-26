@@ -8,6 +8,7 @@ import numpy as np
 from glob import glob
 from datetime import datetime
 
+import streamlit as st
 from ultralytics import YOLO
 
 from dataset.dataset import VideoTransform
@@ -116,6 +117,7 @@ def test(video_files=None):
         video_writer.release()
         video.release()
         print(f"Time to process: {(datetime.now() - start).total_seconds()}")
+        st.text(f"Time to process: {(datetime.now() - start).total_seconds()}")
         filenames.append(filename)
         
     return filenames
