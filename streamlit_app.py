@@ -65,15 +65,15 @@ def app():
             
             for output_path in videos:
                 st.text(f"Visualizing {output_path}")
-                subprocess.run(['ffmpeg', '-i', output_path, '-vcodec', 'h264', output_path])
-                st.video(output_path)
+                subprocess.run(['ffmpeg', '-i', output_path, '-vcodec', 'h264', f"processed_{output_path}"])
+                st.video(f"processed_{output_path}")
                 # with open(output_path, 'rb') as f:
                 #     st.download_button('Download Video', f, file_name=output_path.split("/")[-1])
         
         else:
             output_path = input_path.replace("originals", "predicted")
-            subprocess.run(['ffmpeg', '-i', output_path, '-vcodec', 'h264', output_path])
-            st.video(output_path)
+            subprocess.run(['ffmpeg', '-i', output_path, '-vcodec', 'h264', f"processed_{output_path}"])
+            st.video(f"processed_{output_path}")
             # with open(output_path, 'rb') as f:
             #     st.download_button('Download Video', f, file_name=output_path.split("/")[-1])
 
