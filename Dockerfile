@@ -38,6 +38,7 @@ RUN add-apt-repository ppa:deadsnakes/ppa -y
 
 RUN apt-get update && apt-get install -y --no-install-recommends\
     git\
+    build-essential cmake pkg-config \
     # Python
     python${PYTHON_VERSION} \
     python${PYTHON_VERSION}-dev \
@@ -126,6 +127,33 @@ RUN python${PYTHON_VERSION} -m pip install torchvision==${TORCHVISION_VERSION}+c
 
 RUN python${PYTHON_VERSION} -m pip install -r /opt/program/requirements.txt \
     && rm /opt/program/requirements.txt
+
+RUN python${PYTHON_VERSION} -m pip uninstall -y opencv-python opencv-python-headless
+
+RUN git clone https://github.com/opencv/opencv.git
+RUN cd opencv
+RUN git checkout 4.x
+RUN mkdir build
+RUN cd build
+
+RUN cmake -D CMAKE_BUILD_TYPE=RELEASE \
+      -D CMAKE_INSTALL_PREFIX=/usr/local \
+      -D WITH_FFMPEG=ON \
+      -D BUILD_EXAMPLES=OFF \
+      -D INSTALL_PYTHON_EXAMPLES=OFF \
+      -D INSTALL_C_EXAMPLES=OFF \
+      -D BUILD_DOCS=OFF \
+      -D BUILD_PERF_TESTS=OFF \
+      -D BUILD_TESTS=OFF \
+      -D WITH_TBB=ON \
+      -D WITH_OPENMP=ON \
+      -D WITH_IPP=ON \
+      -D CPU_BASELINE=SSE4_2,AVX,AVX2 \
+      ..
+
+RUN make -j$(nproc)
+RUN make install
+RUN ldconfig
 
 RUN python${PYTHON_VERSION} -m pip list
 
