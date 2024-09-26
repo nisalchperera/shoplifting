@@ -75,31 +75,32 @@ def test(video_files=None):
             if frame is not None and frame_num % skip_frames == 0:
                 detection = yolo.predict(frame, classes=[0], verbose=False)[0]
 
-                boxes = detection.boxes.xyxy.int().cpu().numpy()
-                _areas = (boxes[:, 2] - boxes[:, 0]) * (boxes[:, 3] - boxes[:, 1])
-                # if _areas.size == 0:
-                #     frame = cv2.resize(frame, (224, 448))
-                if _areas.size != 0:
-                    _idx = np.argmax(_areas)
-                    boxes = boxes[_idx.astype(int)].tolist()
+                for box in detection.boxes.xyxy.int().cpu().numpy().tolist():
+                # boxes = 
+                    # _areas = (boxes[:, 2] - boxes[:, 0]) * (boxes[:, 3] - boxes[:, 1])
+                    # if _areas.size == 0:
+                    #     frame = cv2.resize(frame, (224, 448))
+                    # if _areas.size != 0:
+                    #     _idx = np.argmax(_areas)
+                    # boxes = boxes[_idx.astype(int)].tolist()
                     _frame = _frame[boxes[1]:boxes[3], boxes[0]:boxes[2]]
-                
+                    
 
-                _frame = cv2.resize(_frame, (112, 224))
+                    _frame = cv2.resize(_frame, (112, 224))
 
-                frames.append(_frame)
+                    frames.append(_frame)
 
-                if i >= 64:
-                    frames.pop(0)
+                    if i >= 64:
+                        frames.pop(0)
 
-                inputs = video_transform(frames.copy()).unsqueeze(0)
+                    inputs = video_transform(frames.copy()).unsqueeze(0)
 
-                result = np.argmax(classifier(inputs).detach().cpu().numpy()).item()
-                result = id2cat[result]
-                color = (0, 255, 0) if result == "Normal" else (0, 0, 255)
-                if _areas.size > 0:
-                    cv2.rectangle(frame, tuple(boxes[:2]), tuple(boxes[2:]), color, 2)
-                    cv2.putText(frame, result, tuple(boxes[:2]), font, fontScale, color, 2)
+                    result = np.argmax(classifier(inputs).detach().cpu().numpy()).item()
+                    result = id2cat[result]
+                    color = (0, 255, 0) if result == "Normal" else (0, 0, 255)
+                    if _areas.size > 0:
+                        cv2.rectangle(frame, tuple(boxes[:2]), tuple(boxes[2:]), color, 2)
+                        cv2.putText(frame, result, tuple(boxes[:2]), font, fontScale, color, 2)
 
                 # cv2.imshow("Videos", frame)
 
