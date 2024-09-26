@@ -135,6 +135,8 @@ RUN cd opencv
 RUN mkdir build
 RUN cd build
 
+RUN ls ../
+
 RUN cmake -D CMAKE_BUILD_TYPE=RELEASE \
       -D CMAKE_INSTALL_PREFIX=/usr/local \
       -D WITH_FFMPEG=ON \
@@ -148,7 +150,7 @@ RUN cmake -D CMAKE_BUILD_TYPE=RELEASE \
       -D WITH_OPENMP=ON \
       -D WITH_IPP=ON \
       -D CPU_BASELINE=SSE4_2,AVX,AVX2 \
-      ..
+      /opt/program/github/
 
 RUN make -j$(nproc)
 RUN make install
