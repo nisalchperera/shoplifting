@@ -10,5 +10,4 @@ torchvision
 tqdm
 typing_extensions
 ultralytics
-ultralytics-thop
 tensorboard

@@ -62,7 +62,7 @@ def test(video_files=None):
         skip_frames = math.floor(fps / 10)
 
         filename = video_file.replace("originals", "predicted")
-        fourcc = cv2.VideoWriter_fourcc(*'avc1')
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
         video_writer = cv2.VideoWriter(filename, cv2.CAP_FFMPEG, fourcc, fps, (width, height))
 
         frames = []
