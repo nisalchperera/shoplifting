@@ -154,6 +154,11 @@ RUN make -j$(nproc)
 RUN make install
 RUN ldconfig
 
+ENV LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+ENV PYTHONPATH=/usr/local/lib/python3.x/site-packages:$PYTHONPATH
+# Optional: Verify the installation
+RUN python3 -c "import cv2; print(cv2.__version__)"
+
 RUN python${PYTHON_VERSION} -m pip list
 
 WORKDIR /opt/program/
