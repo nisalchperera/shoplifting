@@ -88,4 +88,8 @@ def app():
 
 
 if __name__ == "__main__":
-    app()
+    import traceback
+    try:
+        app()
+    except:
+        traceback.print_exc()
