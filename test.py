@@ -55,11 +55,13 @@ def test(video_files=None):
         width  = int(video.get(cv2.CAP_PROP_FRAME_WIDTH))
         height = int(video.get(cv2.CAP_PROP_FRAME_HEIGHT))
         fps = video.get(cv2.CAP_PROP_FPS)
-
+        h = int(cap.get(cv2.CAP_PROP_FOURCC))
+        codec = chr(h&0xff) + chr((h>>8)&0xff) + chr((h>>16)&0xff) + chr((h>>24)&0xff)
+        
         skip_frames = math.floor(fps / 10)
 
         filename = video_file.replace("originals", "predicted")
-        fourcc = cv2.VideoWriter_fourcc(*'mp4v') 
+        fourcc = cv2.VideoWriter_fourcc(*codec)
         video_writer = cv2.VideoWriter(filename, cv2.CAP_FFMPEG, fourcc, fps, (width, height))
 
         frames = []
