@@ -67,7 +67,7 @@ def app():
             for output_path in videos:
                 st.text(f"Visualizing {output_path}")
                 subprocess.run(['ffmpeg', '-i', output_path, '-vcodec', 'h264', f"{output_path}_processed.mp4"])
-                st.video(f"processed_{output_path}")
+                st.video(f"{output_path}_processed.mp4")
                 # with open(output_path, 'rb') as f:
                 #     st.download_button('Download Video', f, file_name=output_path.split("/")[-1])
         
