@@ -14,7 +14,7 @@ from dataset.dataset import VideoTransform
 
 
 yolo = YOLO("models/yolov8m.pt")
-classifier = torch.load("models/shoplifting_detector_3d_cnn.pth", map_location=torch.device('cpu')).cpu()
+classifier = torch.load("models/shoplifting_detector_3d_cnn.pth")
 video_transform = VideoTransform()
 
 font = cv2.FONT_HERSHEY_SIMPLEX
@@ -90,7 +90,7 @@ def test(video_files=None):
                 if i >= 64:
                     frames.pop(0)
 
-                inputs = video_transform(frames.copy()).unsqueeze(0)
+                inputs = video_transform(frames.copy()).unsqueeze(0).cuda()
 
                 result = np.argmax(classifier(inputs).detach().cpu().numpy()).item()
                 result = id2cat[result]
