@@ -70,7 +70,7 @@ def test(video_files=None):
         i = 0
         while ret:
             ret, frame = video.read()
-            _frame = frame
+            # _frame =frame
 
             if frame is not None or img.size != 0 and frame_num % skip_frames == 0:
                 detection = yolo.predict(frame, classes=[0], verbose=False)[0]
@@ -84,7 +84,7 @@ def test(video_files=None):
                     # if _areas.size != 0:
                     #     _idx = np.argmax(_areas)
                     # boxes = boxes[_idx.astype(int)].tolist()
-                    _frame = _frame[boxes[1]:boxes[3], boxes[0]:boxes[2]]
+                    _frame = frame[boxes[1]:boxes[3], boxes[0]:boxes[2]]
                     
 
                     _frame = cv2.resize(_frame, (112, 224))
