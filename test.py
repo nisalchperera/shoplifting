@@ -36,7 +36,7 @@ def predict(data):
         pad_width = ((0, 64 - data.shape[0]), (0, 0), (0, 0))
         data = np.pad(data, pad_width, mode='constant', constant_values=0)
 
-    out = classifier.model(torch.from_numpy(data).unsqueeze(0).cuda())
+    out = classifier.model(torch.from_numpy(data).unsqueeze(0).to(device))
     # out = (out > 0.5).int().item()
     out = torch.argmax(out, dim=1).item()
 
@@ -95,7 +95,7 @@ def test(video_files=None):
                         frames.pop(0)
 
 
-                    inputs = video_transform(frames.copy()).unsqueeze(0).cuda()
+                    inputs = video_transform(frames.copy()).unsqueeze(0).to(device)
 
                     result = np.argmax(classifier(inputs).detach().cpu().numpy()).item()
                     result = id2cat[result]
