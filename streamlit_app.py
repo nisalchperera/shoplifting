@@ -1,5 +1,6 @@
 import sys
 import shutil
+import traceback
 sys.path.append ("/mount/src/shoplifting/")  
 
 import os
@@ -50,42 +51,45 @@ def app():
     with st.form("my_form"):
         uploaded_file = st.file_uploader("Upload video", type=['mp4'])
         st.form_submit_button(label='Submit')
+    
+    try:        
+        if uploaded_file is not None: 
+            os.makedirs("data/validation/originals", exist_ok=True)
+            os.makedirs("data/validation/predicted", exist_ok=True)
             
-    if uploaded_file is not None: 
-        os.makedirs("data/validation/originals", exist_ok=True)
-        os.makedirs("data/validation/predicted", exist_ok=True)
-        
-        input_path = os.path.join("data/validation/originals", uploaded_file.name)
-        if not os.path.exists(os.path.join("data/validation/predicted", uploaded_file.name)):
-            file_binary = uploaded_file.read()
-            with open(input_path, "wb+") as temp_file:
-                temp_file.write(file_binary)
+            input_path = os.path.join("data/validation/originals", uploaded_file.name)
+            if not os.path.exists(os.path.join("data/validation/predicted", uploaded_file.name)):
+                file_binary = uploaded_file.read()
+                with open(input_path, "wb+") as temp_file:
+                    temp_file.write(file_binary)
+                
+                with st.spinner('Processing video...'): 
+                    videos = test([input_path])
+                
+                for output_path in videos:
+                    st.text(f"Visualizing {output_path}")
+                    if os.path.exists(f"{output_path}_processed.mp4"):
+                        st.video(f"{output_path}_processed.mp4")
+                    else:
+                        subprocess.run(['ffmpeg', '-i', output_path, '-vcodec', 'h264', f"{output_path}_processed.mp4"])
+                        st.video(f"{output_path}_processed.mp4")
+                    # with open(output_path, 'rb') as f:
+                    #     st.download_button('Download Video', f, file_name=output_path.split("/")[-1])
             
-            with st.spinner('Processing video...'): 
-                videos = test([input_path])
-            
-            for output_path in videos:
-                st.text(f"Visualizing {output_path}")
+            else:
+                output_path = input_path.replace("originals", "predicted")
                 if os.path.exists(f"{output_path}_processed.mp4"):
                     st.video(f"{output_path}_processed.mp4")
                 else:
                     subprocess.run(['ffmpeg', '-i', output_path, '-vcodec', 'h264', f"{output_path}_processed.mp4"])
-                    # st.video(f"{output_path}_processed.mp4")
+                    st.video(f"{output_path}_processed.mp4")
                 # with open(output_path, 'rb') as f:
                 #     st.download_button('Download Video', f, file_name=output_path.split("/")[-1])
-        
-        else:
-            output_path = input_path.replace("originals", "predicted")
-            if os.path.exists(f"{output_path}_processed.mp4"):
-                pass
-                # st.video(f"{output_path}_processed.mp4")
-            else:
-                subprocess.run(['ffmpeg', '-i', output_path, '-vcodec', 'h264', f"{output_path}_processed.mp4"])
-                # st.video(f"{output_path}_processed.mp4")
-            # with open(output_path, 'rb') as f:
-            #     st.download_button('Download Video', f, file_name=output_path.split("/")[-1])
-            
-        os.remove(output_path)
+                
+            os.remove(output_path)
+    except:
+        st.error("An error occurred. Here's the full traceback:")
+        st.code(traceback.format_exc())
 
 
 if __name__ == "__main__":
