@@ -70,17 +70,18 @@ def app():
                     st.video(f"{output_path}_processed.mp4")
                 else:
                     subprocess.run(['ffmpeg', '-i', output_path, '-vcodec', 'h264', f"{output_path}_processed.mp4"])
-                    st.video(f"{output_path}_processed.mp4")
+                    # st.video(f"{output_path}_processed.mp4")
                 # with open(output_path, 'rb') as f:
                 #     st.download_button('Download Video', f, file_name=output_path.split("/")[-1])
         
         else:
             output_path = input_path.replace("originals", "predicted")
             if os.path.exists(f"{output_path}_processed.mp4"):
-                st.video(f"{output_path}_processed.mp4")
+                pass
+                # st.video(f"{output_path}_processed.mp4")
             else:
                 subprocess.run(['ffmpeg', '-i', output_path, '-vcodec', 'h264', f"{output_path}_processed.mp4"])
-                st.video(f"{output_path}_processed.mp4")
+                # st.video(f"{output_path}_processed.mp4")
             # with open(output_path, 'rb') as f:
             #     st.download_button('Download Video', f, file_name=output_path.split("/")[-1])
             
