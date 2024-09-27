@@ -35,7 +35,7 @@ def download_progress_hook(count, blocksize, totalsize):
         print("Download successfull")
 
 if not os.path.exists("models/shoplifting_detector_3d_cnn.pth"):
-    link = 'https://shoplifting-analysis.s3.us-east-1.amazonaws.com/models/shoplifting_detector_3d_cnn.pth?response-content-disposition=inline&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEMn%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJHMEUCIQD0TNOnr5%2BcB%2BM8jcE6L5FTACSI2Ai1662OFZEph0rPzwIgTjyFXCkJolgMU%2BK8tL9aJ4OlKDnIWlfm0YYeUd50ExIq6AIIEhADGgw0NTQ4NDI1NjQzNzAiDOzoLpj827dBBhO%2FEyrFAnPO%2FA8torvKqWeducD%2BfI8YOPyl4AnC1Towc9HeWqHCYvqUrBPbjYv%2FeSqKOWuT1oNpMF3Uo5xMFj7WeqEQDlp2u5ixSMlYBjLcD5mcbSgTzaRe7bb%2BmG8flm9aIrefUDPIx0nobuDHiIfFN4%2FesSVbUSdupbo%2F4TsJsLyIDVv4VMBkX1CjDblV7eVTENDiyrYIBT8AOJciymAKm9wtfn7ph6cu4pwjDfjT9eZWhrvToYIF3iow8a8wtqU5GUFbUynJkv2Tl8OnWF9LvCTkM9%2BRHN%2FhVTyRMiWut6Ao30D%2B01uhJsiZjrBxgNUJshVYrWmbmg1Ik1nyEExGyC3JcbixSsFIZiaeTGeZztXP%2F66B9iMSubL0FHSLb6bP66WO091PiDxphSV%2FPHspQsXvJGnVzfC47IKVkXAW91ZRy7%2BwOwqcdtkwru%2FTtwY6swL6jNFcE1x6tkZfWaBkpERfLVFx8V7wIx9Y2Pkejb4e3ItzeYb%2F7BnB0XTXgZkovmUdrqLX39YZCmRe6t2egj0h98ck8HjrokmMJKzJVsAyk039Xqj3deFPBA8PQAVV2%2BGJ00RZk0p4hKdMQu5Ir%2Fq5z%2BejtUPw0QFUMyS%2FbAe3lLR3YsuuBqSrm5Ioy6ZQ3eYJSE2CxC0YfYSXDSDVsqSrmtyrhEsxKYAOJdI5zlKSPleo66fP0gnHQ88rLShQXqIKmXcWfjOmHL2bZ903knUNt1WrTbjQFb93kaJYg3hg0B%2FHvSgnS5EiQMsZDyUD4ojQsKKJ4S5m%2FFnKlaswI2%2Fj53qS4WWyckcococJ%2Bvk0WWWv4UWF2V4ZgYSAuaLbQzBRvvaqtPhqY32xLxf5zGzo0rmR&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20240926T090030Z&X-Amz-SignedHeaders=host&X-Amz-Expires=43200&X-Amz-Credential=ASIAWTZV2X4JKJQET5DC%2F20240926%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Signature=13cd462654f6a83ff9d8f9977aafb66ccefc38ea583e4825af51d0cb3ced2a5c'
+    link = 'https://shoplifting-analysis.s3.us-east-1.amazonaws.com/models/shoplifting_detector_3d_cnn.pth?response-content-disposition=inline&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEOD%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJIMEYCIQDUTzJI4jH2%2F4n2SmrrXaK8laxuHrv7oFZGvFNrg0N8xAIhAP0sr1l71JaSUeZgrulrfTQMCec1W1OKp9z1kkz1haofKugCCCkQAxoMNDU0ODQyNTY0MzcwIgyt8vdIgVaspkCmu3QqxQLBnEmMJiucL4ekXsqP52GNYvlLhYXcNuTOe6l6FY69J5w%2BegrXYwofhI9ZQamq3Qk88Qc2TEs3RonmKFR%2BNa79RTMCujGNwtf6Ke8KMhLuZt0ZnCntKUnMP2yxKLJdRIGEcZthWOrRLfsEh6PT%2FHiY%2BwmSwsH%2FBckk6aaIsdKD2quKYnTy0VX2fdTvL9INlzOJ2Zg5MhRCNmKSArUWBtKfujkLxxr4Ur6vQhBQSUSt1FtytB1R%2BJPs%2FjnueyVocNFb%2BHAW7%2BxpdnF4X4A4xbYAWsR7rWHbNngLOZ%2FMy2yMCpUVvxaw2bL3zkRTKxjyILx3f1j3y9H8aYJLLal9R2DEsFlphLOnnGbpwHjeG1e1MVlIWu9XR7zoChqnPs43j3m3pSWrR%2FE4yLtkwa%2B7zkGePoKF08wcyOzo0visgMPHq2YwvvP%2FMMa%2F2bcGOrICoLhu5zfzKVDr5fxP2T84YvOXwNFtAH54Ugou7U5k6iSi6xyppfYl6zknoDYqV1ipLdxLbNOaN7hBkb8Rfs8ZxkPI5LPJ1LU4T3WOGw5%2B9B29QBwjz%2Fbpfl9vtSwl0oeRs4G71pN6xjzaAQz9OgjCndKndutuQBWXbzI7emAQn4kQih%2Fzt0yi8Ue%2Fb3lpr%2FZznnsTcn31vkzE5EywghA5k0xrwV7mOnhRiJzEymvSlNyNpWW5DY%2FIQq9m%2BMZy9YlzsYFtAxyHwW4aJo2oEIDMHhbZ46XQatXOlso3y5%2FPWJQpCApPGqrfMmZRjkxV3dkKxiRJUPxu9Z4OGTAUY9NF1ZrwIyybBPzAaI61PxFFxeWJrQIYQ1xn%2FnEWtCGLcZ5r%2BB3acbD%2BeHXJVshrgcJ97FFo&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20240927T073457Z&X-Amz-SignedHeaders=host&X-Amz-Expires=43200&X-Amz-Credential=ASIAWTZV2X4JEWNYZ4QV%2F20240927%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Signature=31f552043e9c0a1252ef562f88daa2950bc1e0d9380c2b16ca7aeb2a3b5ea100'
     
     # command = ["wget", f"'{link}'", "-O", "./models/shoplifting_detector_3d_cnn.pth"]
     # print(f"Running Command: {' '.join(command)}")
@@ -71,7 +71,9 @@ def app():
                     if os.path.exists(f"{output_path}_processed.mp4"):
                         st.video(f"{output_path}_processed.mp4")
                     else:
-                        subprocess.run(['ffmpeg', '-i', output_path, '-vcodec', 'h264', f"{output_path}_processed.mp4"])
+                        with st.spinner('Converting video...'):
+                            subprocess.run(['ffmpeg', '-i', output_path, '-vcodec', 'h264', f"{output_path}_processed.mp4"])
+                        
                         st.video(f"{output_path}_processed.mp4")
                     # with open(output_path, 'rb') as f:
                     #     st.download_button('Download Video', f, file_name=output_path.split("/")[-1])
@@ -81,7 +83,9 @@ def app():
                 if os.path.exists(f"{output_path}_processed.mp4"):
                     st.video(f"{output_path}_processed.mp4")
                 else:
-                    subprocess.run(['ffmpeg', '-i', output_path, '-vcodec', 'h264', f"{output_path}_processed.mp4"])
+                    with st.spinner('Converting video...'):
+                        subprocess.run(['ffmpeg', '-i', output_path, '-vcodec', 'h264', f"{output_path}_processed.mp4"])
+                        
                     st.video(f"{output_path}_processed.mp4")
                 # with open(output_path, 'rb') as f:
                 #     st.download_button('Download Video', f, file_name=output_path.split("/")[-1])
